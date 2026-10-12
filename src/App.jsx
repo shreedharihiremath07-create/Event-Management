@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useStore } from './store/useStore';
 import Navbar from './components/layout/Navbar';
@@ -16,34 +16,42 @@ import LeadCapture from './pages/LeadCapture';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
-export default function App() {
+function AppContent() {
   const { fetchEvents } = useStore();
+  const isDashboard = useLocation().pathname.startsWith('/dashboard');
 
   useEffect(() => {
     fetchEvents();
-  }, []);
+  }, [fetchEvents]);
+
+  return (
+    <div className={`min-h-screen flex flex-col ${isDashboard ? 'dashboard-app' : 'bg-slate-50 text-slate-900 antialiased selection:bg-blue-600 selection:text-white'}`}>
+      <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
+      {!isDashboard && <Navbar />}
+      <main className="flex-1">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/events" element={<Events />} />
+          <Route path="/events/:id" element={<EventDetail />} />
+          <Route path="/create-event" element={<CreateEvent />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/my-tickets" element={<MyTickets />} />
+          <Route path="/checkin/:eventId" element={<CheckIn />} />
+          <Route path="/lead-capture/:eventId" element={<LeadCapture />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+        </Routes>
+      </main>
+      {!isDashboard && <Footer />}
+      <EventChatbot />
+    </div>
+  );
+}
+
+export default function App() {
   return (
     <BrowserRouter>
-      <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 antialiased selection:bg-blue-600 selection:text-white">
-        <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
-        <Navbar />
-        <main className="flex-1">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/events" element={<Events />} />
-            <Route path="/events/:id" element={<EventDetail />} />
-            <Route path="/create-event" element={<CreateEvent />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/my-tickets" element={<MyTickets />} />
-            <Route path="/checkin/:eventId" element={<CheckIn />} />
-            <Route path="/lead-capture/:eventId" element={<LeadCapture />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-          </Routes>
-        </main>
-        <Footer />
-        <EventChatbot />
-      </div>
+      <AppContent />
     </BrowserRouter>
   );
 }

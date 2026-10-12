@@ -1,266 +1,356 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Users, Calendar, TrendingUp, DollarSign, Target, QrCode, 
-  UserCheck, Download, Plus, Search, ArrowUpRight, Sparkles 
+import {
+  ArrowDownToLine, ArrowRight, BarChart3, CalendarDays, CheckCircle2,
+  ChevronDown, CircleHelp, Clock3, LayoutDashboard, MapPin,
+  Menu, Plus, QrCode, Search, Ticket, Users, X, Zap
 } from 'lucide-react';
-import { 
-  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, 
-  BarChart, Bar, CartesianGrid, PieChart, Pie, Cell 
+import {
+  Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis
 } from 'recharts';
 import { useStore } from '../store/useStore';
-import StatsCard from '../components/dashboard/StatsCard';
-import { formatCurrency, formatDate } from '../utils/helpers';
-import toast from 'react-hot-toast';
+import { formatCurrency } from '../utils/helpers';
+import './Dashboard.css';
 
-const revenueData = [
-  { month: 'Jan', revenue: 45000, leads: 180 },
-  { month: 'Feb', revenue: 62000, leads: 240 },
-  { month: 'Mar', revenue: 98000, leads: 410 },
-  { month: 'Apr', revenue: 145000, leads: 680 },
-  { month: 'May', revenue: 190000, leads: 820 },
-  { month: 'Jun', revenue: 260000, leads: 1150 }
-];
+const getEventDate = (date) => new Date(`${date}T00:00:00`);
+const formatCount = (value) => (Number(value) || 0).toLocaleString('en-IN');
+const formatShortDate = (date) => getEventDate(date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+const getInitials = (name) => (name || 'Admin').trim().split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0]).join('').toUpperCase();
 
-const leadFunnelData = [
-  { name: 'Discovered', value: 4200, color: '#3B82F6' },
-  { name: 'Registered', value: 2100, color: '#6366F1' },
-  { name: 'Attended', value: 1650, color: '#8B5CF6' },
-  { name: 'Hot Leads', value: 920, color: '#EC4899' },
-  { name: 'Converted', value: 340, color: '#10B981' }
-];
-
-export default function Dashboard() {
-  const { events, leads, fetchEvents, fetchLeads } = useStore();
-  const [selectedEventId, setSelectedEventId] = useState(events[0]?.id || '1');
-
-  useEffect(() => {
-    fetchEvents();
-    fetchLeads();
-  }, []);
-
-  useEffect(() => {
-    if (events.length > 0 && !selectedEventId) {
-      setSelectedEventId(events[0].id);
-    }
-  }, [events]);
-
-  const totalRegs = events.reduce((acc, e) => acc + (e.registrations || 0), 0);
-  const totalAttendees = events.reduce((acc, e) => acc + (e.attendees || 0), 0);
-  const totalLeads = events.reduce((acc, e) => acc + (e.leads || 0), 0) + leads.length;
-  const estimatedRevenue = events.reduce((acc, e) => acc + ((e.registrations || 0) * 1200), 0);
-
-  const exportReport = () => {
-    toast.success('📊 Exporting CSV Growth Analytics Report...');
-  };
-
+function DashboardNav({ onNavigate }) {
+  const links = [
+    { label: 'Overview', href: '#overview', icon: LayoutDashboard },
+    { label: 'Manage events', href: '#events', icon: CalendarDays },
+    { label: 'Analytics', href: '#analytics', icon: BarChart3 },
+    { label: 'Check-in', href: '#quick-actions', icon: QrCode },
+    { label: 'Discover events', href: '/events', icon: Ticket, route: true },
+  ];
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        
-        {/* Top Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-slate-900" style={{fontFamily:'Poppins,sans-serif'}}>
-                Organizer Growth Control Center
-              </h1>
-              <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                <Sparkles className="w-3 h-3" /> Pro
-              </span>
-            </div>
-            <p className="text-slate-500 text-sm mt-1">Real-time attendance, lead generation, and event ROI monetization pipeline.</p>
-          </div>
+    <nav className="dashboard-nav" aria-label="Dashboard navigation">
+      {links.map((item, index) => {
+        const content = <><item.icon size={16} aria-hidden="true" /><span>{item.label}</span></>;
+        const onClick = () => {
+          onNavigate();
+          if (!item.route) document.querySelector(item.href)?.scrollIntoView({ behavior: 'smooth' });
+        };
 
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={exportReport}
-              className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-4 py-2.5 rounded-xl text-sm transition"
-            >
-              <Download className="w-4 h-4" /> Export Report
-            </button>
-            <Link
-              to="/create-event"
-              className="flex items-center gap-2 bg-blue-700 hover:bg-blue-800 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition shadow-sm"
-            >
-              <Plus className="w-4 h-4" /> Host New Event
-            </Link>
-          </div>
+        return item.route ? (
+          <Link key={item.label} to={item.href} className={`dashboard-nav-link${index === 0 ? ' is-active' : ''}`} onClick={onClick}>{content}</Link>
+        ) : (
+          <a key={item.label} href={item.href} className={`dashboard-nav-link${index === 0 ? ' is-active' : ''}`} onClick={onClick}>{content}</a>
+        );
+      })}
+    </nav>
+  );
+}
+
+function EventCard({ event, today }) {
+  const eventDate = getEventDate(event.date);
+  const isUpcoming = eventDate >= today;
+  const lowestTicket = (event.tickets || []).reduce((min, ticket) => Math.min(min, Number(ticket.price) || 0), Infinity);
+
+  return (
+    <article className="dashboard-event-card">
+      <Link to={`/events/${event.id}`} className="dashboard-event-image-link" aria-label={`View ${event.title}`}>
+        <img src={event.image} alt="" className="dashboard-event-image" loading="lazy" />
+        <span className="dashboard-event-category">{event.category}</span>
+        <span className="dashboard-event-date">{formatShortDate(event.date)}</span>
+      </Link>
+      <div className="dashboard-event-body">
+        <div className="dashboard-event-state">
+          <span className={`dashboard-state-dot${isUpcoming ? '' : ' is-past'}`} />
+          {isUpcoming ? 'Upcoming' : 'Past event'}
         </div>
-
-        {/* 4 Big KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <StatsCard
-            title="Total Events Managed"
-            value={events.length}
-            subtitle="Active across 6 categories"
-            icon={Calendar}
-            color="blue"
-            trend="+12% MoM"
-          />
-          <StatsCard
-            title="Total Registrations"
-            value={totalRegs.toLocaleString()}
-            subtitle="88% check-in projection"
-            icon={Users}
-            color="purple"
-            trend="+24% MoM"
-          />
-          <StatsCard
-            title="Qualified Leads Captured"
-            value={totalLeads.toLocaleString()}
-            subtitle="Avg AI Score: 84/100"
-            icon={Target}
-            color="amber"
-            trend="+38% MoM"
-          />
-          <StatsCard
-            title="Monetization & Ticket Volume"
-            value={formatCurrency(estimatedRevenue)}
-            subtitle="Direct + Sponsorship ROI"
-            icon={DollarSign}
-            color="green"
-            trend="+45% MoM"
-          />
+        <Link to={`/events/${event.id}`} className="dashboard-event-title">{event.title}</Link>
+        <p className="dashboard-event-location"><MapPin size={14} /> {event.city}{event.venue ? ` · ${event.venue}` : ''}</p>
+        <div className="dashboard-event-meta">
+          <span><Users size={14} /> {formatCount(event.registrations)} registered</span>
+          <strong>{Number.isFinite(lowestTicket) ? formatCurrency(lowestTicket) : 'Tickets'}</strong>
         </div>
-
-        {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Revenue & Growth Trend */}
-          <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-base font-bold text-slate-900" style={{fontFamily:'Poppins,sans-serif'}}>
-                  Event Growth & Lead Funnel Pipeline
-                </h3>
-                <p className="text-xs text-slate-500">Monthly ticket revenue (₹) vs Qualified B2B Leads</p>
-              </div>
-              <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg">2026 YTD</span>
-            </div>
-            <div className="h-72 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={revenueData}>
-                  <defs>
-                    <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#1B4FD8" stopOpacity={0.4}/>
-                      <stop offset="95%" stopColor="#1B4FD8" stopOpacity={0}/>
-                    </linearGradient>
-                    <linearGradient id="colorLead" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.4}/>
-                      <stop offset="95%" stopColor="#F59E0B" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                  <XAxis dataKey="month" stroke="#94A3B8" fontSize={12} />
-                  <YAxis stroke="#94A3B8" fontSize={12} />
-                  <Tooltip />
-                  <Area type="monotone" dataKey="revenue" stroke="#1B4FD8" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" name="Revenue (₹)" />
-                  <Area type="monotone" dataKey="leads" stroke="#F59E0B" strokeWidth={2} fillOpacity={1} fill="url(#colorLead)" name="Leads Captured" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Conversion Funnel */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-            <div>
-              <h3 className="text-base font-bold text-slate-900" style={{fontFamily:'Poppins,sans-serif'}}>
-                End-to-End Growth Funnel
-              </h3>
-              <p className="text-xs text-slate-500 mb-4">Discovery → Ticket → Check-in → Deal</p>
-              <div className="space-y-3">
-                {leadFunnelData.map((f) => (
-                  <div key={f.name}>
-                    <div className="flex justify-between text-xs font-semibold text-slate-700 mb-1">
-                      <span>{f.name}</span>
-                      <span>{f.value.toLocaleString()}</span>
-                    </div>
-                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{ width: `${(f.value / 4200) * 100}%`, backgroundColor: f.color }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-6 p-4 bg-emerald-50 rounded-xl border border-emerald-100 flex items-center justify-between">
-              <div>
-                <p className="text-xs text-emerald-800 font-bold">Overall Conversion</p>
-                <p className="text-xl font-black text-emerald-700">8.1%</p>
-              </div>
-              <span className="text-xs bg-emerald-600 text-white font-bold px-2 py-1 rounded-lg">Top 5% in Sector</span>
-            </div>
-          </div>
+        <div className="dashboard-event-actions">
+          <Link to={`/checkin/${event.id}`}><QrCode size={14} /> Check-in</Link>
+          <Link to={`/lead-capture/${event.id}`}><Users size={14} /> Leads</Link>
         </div>
-
-        {/* Event Management Table & Live Booth Actions */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-bold text-slate-900" style={{fontFamily:'Poppins,sans-serif'}}>Active Events & On-Ground Toolkit</h3>
-              <p className="text-xs text-slate-500">Live QR Check-in scanners, Lead Booth capture, and CRM sync</p>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-sm">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  <th className="py-3 px-4">Event Name</th>
-                  <th className="py-3 px-4">City / Date</th>
-                  <th className="py-3 px-4">Registrations</th>
-                  <th className="py-3 px-4">Checked-In</th>
-                  <th className="py-3 px-4">Hot Leads</th>
-                  <th className="py-3 px-4 text-right">Quick Toolkit</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {events.map((ev) => (
-                  <tr key={ev.id} className="hover:bg-slate-50/70 transition">
-                    <td className="py-4 px-4 font-semibold text-slate-900 flex items-center gap-3">
-                      <img src={ev.image} alt={ev.title} className="w-10 h-10 rounded-lg object-cover" />
-                      <div>
-                        <span>{ev.title}</span>
-                        <span className="block text-xs font-normal text-slate-500">{ev.category}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4 text-slate-600 text-xs">
-                      <div>{ev.city}</div>
-                      <div className="text-slate-400">{formatDate(ev.date)}</div>
-                    </td>
-                    <td className="py-4 px-4 font-bold text-slate-800">{ev.registrations.toLocaleString()}</td>
-                    <td className="py-4 px-4">
-                      <span className="inline-flex items-center gap-1 text-xs font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
-                        <UserCheck className="w-3 h-3" /> {ev.attendees.toLocaleString()}
-                      </span>
-                    </td>
-                    <td className="py-4 px-4 font-bold text-amber-600">{ev.leads.toLocaleString()}</td>
-                    <td className="py-4 px-4 text-right space-x-2">
-                      <Link
-                        to={`/checkin/${ev.id}`}
-                        className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold px-3 py-1.5 rounded-lg transition"
-                      >
-                        <QrCode className="w-3.5 h-3.5" /> Check-in
-                      </Link>
-                      <Link
-                        to={`/lead-capture/${ev.id}`}
-                        className="inline-flex items-center gap-1 bg-amber-50 text-amber-800 hover:bg-amber-100 text-xs font-bold px-3 py-1.5 rounded-lg transition"
-                      >
-                        <Target className="w-3.5 h-3.5" /> Capture Leads
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
       </div>
+    </article>
+  );
+}
+
+export default function Dashboard() {
+  const { events, leads, user, loading, errors, fetchLeads } = useStore();
+  const [search, setSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [eventRange, setEventRange] = useState('All');
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  useEffect(() => {
+    fetchLeads();
+  }, [fetchLeads]);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const orderedEvents = useMemo(
+    () => [...events].sort((a, b) => getEventDate(a.date) - getEventDate(b.date)),
+    [events]
+  );
+  const upcomingEvents = orderedEvents.filter((event) => getEventDate(event.date) >= today);
+  const categories = useMemo(
+    () => ['All', ...new Set(orderedEvents.map((event) => event.category).filter(Boolean))],
+    [orderedEvents]
+  );
+  const visibleEvents = orderedEvents.filter((event) => {
+    const matchesSearch = `${event.title} ${event.category} ${event.city} ${event.venue}`
+      .toLowerCase()
+      .includes(search.trim().toLowerCase());
+    const matchesCategory = selectedCategory === 'All' || event.category === selectedCategory;
+    const matchesRange = eventRange === 'All'
+      || (eventRange === 'Upcoming' && getEventDate(event.date) >= today)
+      || (eventRange === 'Past' && getEventDate(event.date) < today);
+    return matchesSearch && matchesCategory && matchesRange;
+  });
+  const registrationTotal = events.reduce((total, event) => total + (Number(event.registrations) || 0), 0);
+  const attendeeTotal = events.reduce((total, event) => total + (Number(event.attendees) || 0), 0);
+  const chartEvents = orderedEvents.slice(-7).map((event, index) => ({
+    name: `Event ${index + 1}`,
+    title: event.title,
+    registrations: Number(event.registrations) || 0,
+  }));
+  const organizerName = user?.name || 'Organizer';
+  const heroImage = (upcomingEvents[0] || orderedEvents[0])?.image;
+
+  const exportEvents = () => {
+    const quote = (value) => `"${String(value ?? '').replaceAll('"', '""')}"`;
+    const rows = [
+      ['Event', 'Category', 'Date', 'City', 'Registrations', 'Attendees', 'Leads'],
+      ...orderedEvents.map((event) => [
+        event.title, event.category, event.date, event.city,
+        event.registrations, event.attendees, event.leads,
+      ]),
+    ];
+    const csv = rows.map((row) => row.map(quote).join(',')).join('\r\n');
+    const downloadUrl = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const anchor = document.createElement('a');
+    anchor.href = downloadUrl;
+    anchor.download = 'rsr-events-report.csv';
+    anchor.click();
+    URL.revokeObjectURL(downloadUrl);
+  };
+
+  const scrollToEvents = (event) => {
+    event.preventDefault();
+    document.querySelector('#events')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  return (
+    <div className="admin-dashboard" id="overview">
+      <header className="dashboard-header">
+        <div className="dashboard-header-inner">
+          <Link to="/" className="dashboard-brand" aria-label="RSR Events home">
+            <span className="dashboard-brand-mark"><Zap size={20} fill="currentColor" /></span>
+            <span className="dashboard-brand-copy"><strong>RSR</strong><small>EVENT GROWTH PLATFORM</small></span>
+          </Link>
+
+          <DashboardNav onNavigate={() => setMobileNavOpen(false)} />
+
+          <div className="dashboard-header-actions">
+            <button className="dashboard-export-button" type="button" onClick={exportEvents} aria-label="Export event report">
+              <ArrowDownToLine size={17} /><span>Export</span>
+            </button>
+            <Link to="/create-event" className="dashboard-header-create"><Plus size={16} /><span>Create event</span></Link>
+            <div className="dashboard-user" title={`Signed in as ${organizerName}`} aria-label={`Signed in as ${organizerName}`}>
+              <span className="dashboard-avatar">{getInitials(organizerName)}</span>
+              <span className="dashboard-user-name">{organizerName.split(' ')[0]}</span>
+              <ChevronDown size={14} />
+            </div>
+            <button
+              className="dashboard-mobile-menu"
+              type="button"
+              aria-label={mobileNavOpen ? 'Close navigation' : 'Open navigation'}
+              aria-expanded={mobileNavOpen}
+              onClick={() => setMobileNavOpen((open) => !open)}
+            >
+              {mobileNavOpen ? <X size={21} /> : <Menu size={21} />}
+            </button>
+          </div>
+        </div>
+        {mobileNavOpen && <div className="dashboard-mobile-nav"><DashboardNav onNavigate={() => setMobileNavOpen(false)} /></div>}
+      </header>
+
+      <main className="dashboard-page">
+        <section className="dashboard-hero" style={heroImage ? { '--dashboard-hero-image': `url("${heroImage}")` } : undefined}>
+          <div className="dashboard-hero-copy">
+            <p className="dashboard-eyebrow">Your organizer workspace · Bengaluru</p>
+            <h1>Let’s make plans<span>.</span></h1>
+            <p className="dashboard-hero-description">Manage events, registrations, and guest check-ins from one place.</p>
+            <form className="dashboard-hero-search" onSubmit={scrollToEvents}>
+              <label className="dashboard-search-input">
+                <Search size={18} />
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search your events, venues…"
+                  aria-label="Search your events and venues"
+                />
+              </label>
+              <label className="dashboard-search-category">
+                <CalendarDays size={16} />
+                <select value={selectedCategory} onChange={(event) => setSelectedCategory(event.target.value)} aria-label="Filter events by category">
+                  {categories.map((category) => <option key={category}>{category}</option>)}
+                </select>
+                <ChevronDown size={14} />
+              </label>
+              <button type="submit"><Search size={15} /> Find events</button>
+            </form>
+          </div>
+          <div className="dashboard-hero-caption"><span /> Event operations dashboard</div>
+        </section>
+
+        {errors?.events && (
+          <div className="dashboard-error" role="alert">
+            <CircleHelp size={18} />
+            <span>Couldn’t load event data: {errors.events}</span>
+            <Link to="/events">Open events</Link>
+          </div>
+        )}
+
+        <section className="dashboard-metrics" aria-label="Event summary metrics">
+          <article className="dashboard-metric">
+            <span className="dashboard-metric-icon metric-blue"><CalendarDays size={19} /></span>
+            <div><small>Total events</small><strong>{loading.events ? '—' : formatCount(events.length)}</strong><span>In your workspace</span></div>
+          </article>
+          <article className="dashboard-metric">
+            <span className="dashboard-metric-icon metric-teal"><CheckCircle2 size={19} /></span>
+            <div><small>Upcoming events</small><strong>{loading.events ? '—' : formatCount(upcomingEvents.length)}</strong><span>Scheduled from today</span></div>
+          </article>
+          <article className="dashboard-metric">
+            <span className="dashboard-metric-icon metric-orange"><Ticket size={19} /></span>
+            <div><small>Registrations</small><strong>{loading.events ? '—' : formatCount(registrationTotal)}</strong><span>Across listed events</span></div>
+          </article>
+          <article className="dashboard-metric">
+            <span className="dashboard-metric-icon metric-violet"><Users size={19} /></span>
+            <div><small>Captured leads</small><strong>{loading.leads ? '—' : errors?.leads ? '!' : formatCount(leads.length)}</strong><span>{errors?.leads ? 'Lead data unavailable' : 'Connected lead records'}</span></div>
+          </article>
+        </section>
+
+        <section className="dashboard-events-section" id="events">
+          <div className="dashboard-section-heading">
+            <div>
+              <p className="dashboard-section-eyebrow">Your event workspace</p>
+              <h2>Manage your events</h2>
+              <p>See what’s coming up and keep every event moving.</p>
+            </div>
+            <Link to="/create-event" className="dashboard-create-link"><Plus size={16} /> Create new event</Link>
+          </div>
+          <div className="dashboard-filter-row">
+            <div className="dashboard-category-pills" aria-label="Filter events by category">
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  type="button"
+                  className={selectedCategory === category ? 'selected' : ''}
+                  aria-pressed={selectedCategory === category}
+                  onClick={() => setSelectedCategory(category)}
+                >
+                  {category === 'All' && <LayoutDashboard size={14} />}
+                  {category}
+                </button>
+              ))}
+            </div>
+            <div className="dashboard-range-filters" aria-label="Filter event dates">
+              {['All', 'Upcoming', 'Past'].map((range) => (
+                <button
+                  key={range}
+                  type="button"
+                  className={eventRange === range ? 'selected' : ''}
+                  aria-pressed={eventRange === range}
+                  onClick={() => setEventRange(range)}
+                >
+                  {range === 'Upcoming' && <Clock3 size={13} />}
+                  {range}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {errors?.events ? (
+            <div className="dashboard-empty-state" role="status">Event listings are unavailable. Check the connection and reload this page.</div>
+          ) : visibleEvents.length ? (
+            <div className="dashboard-events-grid">
+              {visibleEvents.slice(0, 4).map((event) => <EventCard key={event.id} event={event} today={today} />)}
+            </div>
+          ) : (
+            <div className="dashboard-empty-state">{loading.events ? 'Loading events…' : 'No events match your filters.'}</div>
+          )}
+          <div className="dashboard-view-all">
+            <span>{loading.events ? 'Loading event records…' : `Showing ${formatCount(Math.min(visibleEvents.length, 4))} of ${formatCount(visibleEvents.length)} matching events`}</span>
+            <Link to="/events">View event directory <ArrowRight size={15} /></Link>
+          </div>
+        </section>
+
+        <section className="dashboard-insights-grid" id="analytics">
+          <article className="dashboard-panel">
+            <div className="dashboard-panel-heading">
+              <div><p className="dashboard-section-eyebrow">Performance</p><h2>Registration overview</h2><p>Registrations by event in your workspace</p></div>
+              <span className="dashboard-panel-tag">All events</span>
+            </div>
+            <div className="dashboard-chart-total"><strong>{loading.events ? '—' : formatCount(registrationTotal)}</strong><span>Total registrations</span></div>
+            {chartEvents.length ? (
+              <div className="dashboard-chart">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartEvents} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+                    <CartesianGrid stroke="#edf1f7" vertical={false} />
+                    <XAxis dataKey="name" tickLine={false} axisLine={false} tick={{ fill: '#687993', fontSize: 11 }} />
+                    <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fill: '#687993', fontSize: 11 }} />
+                    <Tooltip
+                      cursor={{ fill: '#f1f6ff' }}
+                      content={({ active, payload }) => active && payload?.length ? (
+                        <div className="dashboard-chart-tooltip"><strong>{payload[0].payload.title}</strong><span>{formatCount(payload[0].value)} registrations</span></div>
+                      ) : null}
+                    />
+                    <Bar dataKey="registrations" fill="#1769e8" radius={[6, 6, 0, 0]} maxBarSize={42} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : <div className="dashboard-empty-state">{loading.events ? 'Loading registration data…' : 'Registration data will appear when you add events.'}</div>}
+            <div className="dashboard-chart-legend"><span /> Registrations per event</div>
+          </article>
+
+          <div className="dashboard-side-stack">
+            <article className="dashboard-panel">
+              <div className="dashboard-panel-heading">
+                <div><p className="dashboard-section-eyebrow">Coming up</p><h2>Next events</h2><p>Your next scheduled experiences</p></div>
+                <a href="#events" className="dashboard-inline-link">All events <ArrowRight size={14} /></a>
+              </div>
+              <div className="dashboard-upcoming-list">
+                {upcomingEvents.slice(0, 3).map((event) => (
+                  <Link to={`/events/${event.id}`} className="dashboard-upcoming-item" key={event.id}>
+                    <span className="dashboard-upcoming-date"><strong>{getEventDate(event.date).toLocaleDateString('en-IN', { day: '2-digit' })}</strong><small>{getEventDate(event.date).toLocaleDateString('en-IN', { month: 'short' })}</small></span>
+                    <span className="dashboard-upcoming-copy"><strong>{event.title}</strong><small><MapPin size={12} /> {event.city}{event.time ? ` · ${event.time}` : ''}</small></span>
+                    <ArrowRight className="dashboard-upcoming-arrow" size={15} />
+                  </Link>
+                ))}
+                {!upcomingEvents.length && <p className="dashboard-empty-state">{loading.events ? 'Loading upcoming events…' : 'No upcoming events yet.'}</p>}
+              </div>
+            </article>
+
+            <article className="dashboard-panel dashboard-attendance-panel" id="quick-actions">
+              <div className="dashboard-panel-heading">
+                <div><p className="dashboard-section-eyebrow">On the day</p><h2>Attendance snapshot</h2><p>Recorded check-ins across events</p></div>
+              </div>
+              <div className="dashboard-attendance-content">
+                <span className="dashboard-attendance-icon"><CheckCircle2 size={20} /></span>
+                <strong>{loading.events ? '—' : formatCount(attendeeTotal)}</strong>
+                <span>attendees checked in</span>
+              </div>
+              <Link to={orderedEvents[0] ? `/checkin/${orderedEvents[0].id}` : '/events'} className="dashboard-attendance-link">Open check-in toolkit <ArrowRight size={14} /></Link>
+            </article>
+          </div>
+        </section>
+
+        <footer className="dashboard-footer">RSR EVENTS <span>·</span> Event operations workspace</footer>
+      </main>
     </div>
   );
 }

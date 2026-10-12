@@ -17,6 +17,10 @@ export const useStore = create((set, get) => ({
     leads: false,
     auth: false,
   },
+  errors: {
+    events: null,
+    leads: null,
+  },
 
   // ─── Auth ────────────────────────────────────────────────────────────────────
   login: async (credentials) => {
@@ -57,12 +61,16 @@ export const useStore = create((set, get) => ({
 
   // ─── Events ──────────────────────────────────────────────────────────────────
   fetchEvents: async (filters = {}) => {
-    set((state) => ({ loading: { ...state.loading, events: true } }));
+    set((state) => ({
+      loading: { ...state.loading, events: true },
+      errors: { ...state.errors, events: null },
+    }));
     try {
       const data = await api.events.getAll(filters);
       set({ events: data.events || [] });
     } catch (err) {
       console.error('Failed to fetch events:', err);
+      set((state) => ({ errors: { ...state.errors, events: err.message } }));
     } finally {
       set((state) => ({ loading: { ...state.loading, events: false } }));
     }
@@ -144,11 +152,18 @@ export const useStore = create((set, get) => ({
   },
 
   fetchLeads: async (eventId) => {
+    set((state) => ({
+      loading: { ...state.loading, leads: true },
+      errors: { ...state.errors, leads: null },
+    }));
     try {
       const data = await api.leads.getAll(eventId);
       set({ leads: data.leads || [] });
     } catch (err) {
       console.error('Failed to fetch leads:', err);
+      set((state) => ({ errors: { ...state.errors, leads: err.message } }));
+    } finally {
+      set((state) => ({ loading: { ...state.loading, leads: false } }));
     }
   },
 }));
