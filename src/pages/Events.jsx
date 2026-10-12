@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Search, SlidersHorizontal } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import EventCard from '../components/events/EventCard';
@@ -6,26 +7,47 @@ import EventFilters from '../components/events/EventFilters';
 
 export default function Events() {
   const { events, fetchEvents, loading } = useStore();
-  const [search, setSearch] = useState('');
-  const [filters, setFilters] = useState({ category: '', city: '', price: '' });
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(() => searchParams.get('search') || '');
+  const [filters, setFilters] = useState(() => ({
+    category: searchParams.get('category') || '',
+    city: searchParams.get('city') || '',
+    price: '',
+  }));
   const [showFilters, setShowFilters] = useState(false);
+  const when = searchParams.get('when') || '';
 
   useEffect(() => {
     fetchEvents();
-  }, []);
+  }, [fetchEvents]);
 
   const handleFilter = (key, val) => setFilters(f => ({ ...f, [key]: val }));
 
   const filtered = useMemo(() => events.filter(e => {
     const tags = Array.isArray(e.tags) ? e.tags : [];
-    if (search && !e.title.toLowerCase().includes(search.toLowerCase()) &&
-        !tags.some(t => t.toLowerCase().includes(search.toLowerCase()))) return false;
+    const searchTerm = search.toLowerCase();
+    const searchFields = [e.title, e.category, e.city, e.venue, e.description, ...tags];
+    if (search && !searchFields.some(value => String(value || '').toLowerCase().includes(searchTerm))) return false;
     if (filters.category && e.category !== filters.category) return false;
     if (filters.city && e.city !== filters.city) return false;
     if (filters.price === 'free' && !e.isFree) return false;
     if (filters.price === 'paid' && e.isFree) return false;
+    const eventDate = new Date(`${e.date}T00:00:00`);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (when === 'today' && eventDate.getTime() !== today.getTime()) return false;
+    if (when === 'weekend') {
+      const friday = new Date(today);
+      friday.setDate(today.getDate() + ((5 - today.getDay() + 7) % 7));
+      const sunday = new Date(friday);
+      sunday.setDate(friday.getDate() + 2);
+      sunday.setHours(23, 59, 59, 999);
+      if (eventDate < friday || eventDate > sunday) return false;
+    }
+    if (when === 'month' &&
+        (eventDate.getMonth() !== today.getMonth() || eventDate.getFullYear() !== today.getFullYear())) return false;
     return true;
-  }), [events, search, filters]);
+  }), [events, search, filters, when]);
 
   return (
     <div className="min-h-screen bg-gray-50">

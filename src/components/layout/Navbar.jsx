@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Menu, X, Zap, Bell, User, ChevronDown, Bot } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const { isLoggedIn, user, logout } = useStore();
-  const navigate = useNavigate();
 
   return (
     <nav className="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-14">
           <Link to="/" className="flex items-center gap-2">
             <div className="bg-blue-700 rounded-lg p-1.5">
               <Zap className="w-5 h-5 text-white" />
@@ -22,11 +21,11 @@ export default function Navbar() {
             </div>
           </Link>
 
-          <div className="hidden md:flex items-center gap-6">
-            <Link to="/events" className="text-gray-600 hover:text-blue-700 font-medium text-sm transition-colors">Discover Events</Link>
-            <Link to="/create-event" className="text-gray-600 hover:text-blue-700 font-medium text-sm transition-colors">List Your Event</Link>
-            <Link to="/dashboard" className="text-gray-600 hover:text-blue-700 font-medium text-sm transition-colors">Dashboard</Link>
-            <Link to="/my-tickets" className="text-gray-600 hover:text-blue-700 font-medium text-sm transition-colors">My Tickets</Link>
+          <div className="hidden md:flex items-center gap-5">
+            <Link to="/events" className="text-gray-700 hover:text-blue-700 font-semibold text-xs transition-colors">Discover Events</Link>
+            <Link to="/create-event" className="text-gray-600 hover:text-blue-700 font-medium text-xs transition-colors">List Your Event</Link>
+            <Link to="/dashboard" className="text-gray-600 hover:text-blue-700 font-medium text-xs transition-colors">Dashboard</Link>
+            <Link to="/my-tickets" className="text-gray-600 hover:text-blue-700 font-medium text-xs transition-colors">My Tickets</Link>
             <button
               onClick={() => window.dispatchEvent(new CustomEvent('open-rsr-chatbot'))}
               className="flex items-center gap-1.5 px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-full font-medium text-xs transition border border-blue-200 cursor-pointer shadow-xs"
@@ -36,7 +35,7 @@ export default function Navbar() {
             </button>
           </div>
 
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-2">
             {isLoggedIn ? (
               <div className="flex items-center gap-3">
                 <button className="relative p-2 text-gray-500 hover:text-blue-700">
@@ -53,8 +52,8 @@ export default function Navbar() {
               </div>
             ) : (
               <>
-                <Link to="/login" className="text-sm font-medium text-gray-600 hover:text-blue-700 px-3 py-1.5 rounded-lg transition">Login</Link>
-                <Link to="/register" className="text-sm font-semibold bg-blue-700 text-white px-4 py-1.5 rounded-lg hover:bg-blue-800 transition">Sign Up Free</Link>
+                <Link to="/login" className="text-xs font-medium text-gray-600 hover:text-blue-700 px-3 py-1.5 rounded-lg transition">Login</Link>
+                <Link to="/register" className="text-xs font-semibold bg-blue-700 text-white px-3.5 py-2 rounded-lg hover:bg-blue-800 transition">Sign Up Free</Link>
               </>
             )}
           </div>
