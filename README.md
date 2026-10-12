@@ -1,5 +1,16 @@
 # React + Vite
 
+## Render deployment
+
+This application can be deployed as a Docker web service from the repository
+root. The root-level `Dockerfile` installs dependencies, builds the Vite
+frontend, and starts the Express server. Set the Render health check path to
+`/health`.
+
+The repository also includes `render.yaml` for deploying as a Node web service.
+If using that configuration, select the Node runtime in Render rather than
+Docker.
+
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
 Currently, two official plugins are available:
