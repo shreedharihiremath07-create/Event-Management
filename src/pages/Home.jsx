@@ -6,6 +6,12 @@ import { formatCurrency } from '../utils/helpers';
 
 const heroImage = 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=2000&q=85';
 
+const handleEventImageError = (event) => {
+  if (event.currentTarget.src !== heroImage) {
+    event.currentTarget.src = heroImage;
+  }
+};
+
 const getEventDate = (date) => new Date(`${date}T00:00:00`);
 
 const getPrice = (event) => {
@@ -30,6 +36,7 @@ function EventTile({ event }) {
           src={event.image || heroImage}
           alt=""
           loading="lazy"
+          onError={handleEventImageError}
           className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
         />
         <span className="absolute left-2.5 top-2.5 rounded-md bg-white px-2 py-1 text-center text-[10px] font-bold uppercase leading-tight text-slate-800 shadow">
@@ -67,7 +74,13 @@ function UpcomingEvent({ event }) {
       to={`/events/${event.id}`}
       className="group flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm transition hover:border-blue-200 hover:shadow-md"
     >
-      <img src={event.image || heroImage} alt="" loading="lazy" className="h-16 w-20 shrink-0 rounded-lg object-cover" />
+      <img
+        src={event.image || heroImage}
+        alt=""
+        loading="lazy"
+        onError={handleEventImageError}
+        className="h-16 w-20 shrink-0 rounded-lg object-cover"
+      />
       <span className="w-9 shrink-0 text-center text-[10px] font-semibold leading-tight text-slate-500">
         {date.toLocaleDateString('en-IN', { month: 'short' })}
         <strong className="block text-base text-slate-900">{date.getDate()}</strong>
