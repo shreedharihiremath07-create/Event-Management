@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { QrCode, CheckCircle2, Search, UserCheck, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { QrCode, CheckCircle2, UserCheck, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import api from '../services/api';
 import toast from 'react-hot-toast';
@@ -8,22 +8,32 @@ import toast from 'react-hot-toast';
 export default function CheckIn() {
   const { eventId } = useParams();
   const { events, checkIn } = useStore();
-  const event = events.find(e => e.id === eventId) || events[0];
+  const event = events.find(e => e.id === eventId);
 
   const [scanInput, setScanInput] = useState('');
   const [lastScanned, setLastScanned] = useState(null);
   const [checkedList, setCheckedList] = useState([]);
   const [loadingCheckin, setLoadingCheckin] = useState(false);
+  const [checkinsError, setCheckinsError] = useState(null);
 
-  // Load existing check-ins from API on mount
   useEffect(() => {
-    const targetId = eventId || (events[0]?.id);
-    if (targetId) {
-      api.tickets.getCheckins(targetId).then(data => {
-        if (data?.checkins?.length) setCheckedList(data.checkins);
-      }).catch(() => {});
-    }
-  }, [eventId, events]);
+    let active = true;
+    api.tickets.getCheckins(eventId)
+      .then(data => {
+        if (!Array.isArray(data?.checkins)) throw new Error('The check-in service returned an invalid response.');
+        if (active) {
+          setCheckedList(data.checkins);
+          setCheckinsError(null);
+        }
+      })
+      .catch(error => {
+        if (active) {
+          setCheckinsError(error.message || 'Failed to load check-ins.');
+          console.error('Failed to fetch check-ins:', error);
+        }
+      });
+    return () => { active = false; };
+  }, [eventId]);
 
   const handleManualScan = async (codeToProcess) => {
     const code = (codeToProcess || scanInput).trim();
@@ -33,7 +43,7 @@ export default function CheckIn() {
     }
     setLoadingCheckin(true);
     try {
-      const data = await checkIn({ code, eventId: eventId || event?.id });
+      const data = await checkIn({ code, eventId });
       const scan = data.scan;
       setCheckedList(prev => [scan, ...prev]);
       setLastScanned(scan);
@@ -128,7 +138,11 @@ export default function CheckIn() {
             </div>
           </div>
 
-          {checkedList.length === 0 ? (
+          {checkinsError ? (
+            <div role="alert" className="px-6 py-5 text-sm text-amber-300">
+              Check-in history couldn&apos;t be loaded: {checkinsError}
+            </div>
+          ) : checkedList.length === 0 ? (
             <div className="py-16 text-center text-slate-500">
               <QrCode className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p className="text-sm">No check-ins yet. Start scanning!</p>

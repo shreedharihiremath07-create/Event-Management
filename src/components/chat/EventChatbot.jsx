@@ -73,7 +73,7 @@ Ask me any event question below, or tap one of the suggested topics to get start
     if (!query || isLoading) return;
 
     const userMsg = {
-      id: String(Date.now()),
+      id: crypto.randomUUID(),
       sender: 'user',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       text: query
@@ -86,7 +86,7 @@ Ask me any event question below, or tap one of the suggested topics to get start
     try {
       const response = await getChatbotResponse(query, events, apiKey);
       const botMsg = {
-        id: String(Date.now() + 1),
+        id: crypto.randomUUID(),
         sender: 'bot',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         text: response.text,
@@ -99,7 +99,7 @@ Ask me any event question below, or tap one of the suggested topics to get start
       setMessages((prev) => [
         ...prev,
         {
-          id: String(Date.now() + 1),
+          id: crypto.randomUUID(),
           sender: 'bot',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           text: `⚠️ I encountered an error while processing your request. Please try again!`,

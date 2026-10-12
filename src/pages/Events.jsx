@@ -4,9 +4,10 @@ import { Search, SlidersHorizontal } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import EventCard from '../components/events/EventCard';
 import EventFilters from '../components/events/EventFilters';
+import { getWeekendRange } from '../utils/helpers';
 
 export default function Events() {
-  const { events, fetchEvents, loading } = useStore();
+  const { events, fetchEvents, loading, errors } = useStore();
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState(() => searchParams.get('search') || '');
   const [filters, setFilters] = useState(() => ({
@@ -26,7 +27,8 @@ export default function Events() {
   const filtered = useMemo(() => events.filter(e => {
     const tags = Array.isArray(e.tags) ? e.tags : [];
     const searchTerm = search.toLowerCase();
-    const searchFields = [e.title, e.category, e.city, e.venue, e.description, ...tags];
+    const speakers = Array.isArray(e.speakers) ? e.speakers.flatMap(speaker => [speaker.name, speaker.role]) : [];
+    const searchFields = [e.title, e.category, e.city, e.venue, e.description, ...tags, ...speakers];
     if (search && !searchFields.some(value => String(value || '').toLowerCase().includes(searchTerm))) return false;
     if (filters.category && e.category !== filters.category) return false;
     if (filters.city && e.city !== filters.city) return false;
@@ -37,11 +39,7 @@ export default function Events() {
     today.setHours(0, 0, 0, 0);
     if (when === 'today' && eventDate.getTime() !== today.getTime()) return false;
     if (when === 'weekend') {
-      const friday = new Date(today);
-      friday.setDate(today.getDate() + ((5 - today.getDay() + 7) % 7));
-      const sunday = new Date(friday);
-      sunday.setDate(friday.getDate() + 2);
-      sunday.setHours(23, 59, 59, 999);
+      const { friday, sunday } = getWeekendRange(today);
       if (eventDate < friday || eventDate > sunday) return false;
     }
     if (when === 'month' &&
@@ -91,6 +89,14 @@ export default function Events() {
                 {[1,2,3,4,5,6].map(i => (
                   <div key={i} className="bg-white rounded-2xl border border-slate-200 h-72 animate-pulse" />
                 ))}
+              </div>
+            ) : errors.events && events.length === 0 ? (
+              <div className="rounded-2xl bg-white p-8 text-center">
+                <p className="font-semibold text-gray-800">Events couldn&apos;t be loaded.</p>
+                <p className="mt-1 text-sm text-gray-500">{errors.events}</p>
+                <button onClick={() => fetchEvents()} className="mt-4 rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800">
+                  Try again
+                </button>
               </div>
             ) : filtered.length === 0 ? (
               <div className="text-center py-20">

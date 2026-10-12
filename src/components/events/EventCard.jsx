@@ -1,16 +1,25 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, MapPin, Users, Tag, Clock } from 'lucide-react';
+import { Calendar, MapPin, Users, Clock } from 'lucide-react';
 import { formatDate, formatCurrency, getDaysLeft } from '../../utils/helpers';
 
+const fallbackImage = 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=800&q=80';
+
+const handleImageError = (event) => {
+  if (event.currentTarget.src !== fallbackImage) event.currentTarget.src = fallbackImage;
+};
+
 export default function EventCard({ event }) {
-  const minPrice = Math.min(...event.tickets.map(t => t.price));
+  const tickets = Array.isArray(event.tickets) ? event.tickets : [];
+  const tags = Array.isArray(event.tags) ? event.tags : [];
+  const prices = tickets.map(ticket => Number(ticket.price)).filter(Number.isFinite);
+  const minPrice = prices.length ? Math.min(...prices) : 0;
   const daysLeft = getDaysLeft(event.date);
 
   return (
     <Link to={`/events/${event.id}`} className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 flex flex-col">
       <div className="relative overflow-hidden h-48">
-        <img src={event.image} alt={event.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+        <img src={event.image || fallbackImage} onError={handleImageError} alt={event.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
         <div className="absolute top-3 left-3 flex gap-2">
           <span className="text-xs font-semibold bg-blue-700 text-white px-2.5 py-1 rounded-full">{event.category}</span>
@@ -37,14 +46,14 @@ export default function EventCard({ event }) {
           <span className="truncate">{event.venue}</span>
         </div>
         <div className="flex flex-wrap gap-1.5 mt-auto">
-          {event.tags.slice(0,3).map(tag => (
+          {tags.slice(0,3).map(tag => (
             <span key={tag} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-medium">#{tag}</span>
           ))}
         </div>
         <div className="flex items-center justify-between pt-3 border-t border-gray-100">
           <div className="flex items-center gap-1.5 text-sm text-gray-500">
             <Users className="w-3.5 h-3.5" />
-            <span>{event.registrations.toLocaleString()} registered</span>
+            <span>{Number(event.registrations || 0).toLocaleString()} registered</span>
           </div>
           <span className="font-bold text-blue-700" style={{fontFamily:'Poppins,sans-serif'}}>
             {formatCurrency(minPrice)}

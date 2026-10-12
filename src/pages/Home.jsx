@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, CalendarDays, MapPin, Search } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { formatCurrency } from '../utils/helpers';
+import { formatCurrency, getWeekendRange } from '../utils/helpers';
 
 const heroImage = 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=2000&q=85';
 
@@ -100,7 +100,7 @@ function UpcomingEvent({ event }) {
 }
 
 export default function Home() {
-  const { events, loading } = useStore();
+  const { events, fetchEvents, loading, errors } = useStore();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [city, setCity] = useState('');
@@ -121,13 +121,7 @@ export default function Home() {
     [events]
   );
   const weekendEvents = useMemo(() => {
-    const today = new Date();
-    const friday = new Date(today);
-    friday.setDate(today.getDate() + ((5 - today.getDay() + 7) % 7));
-    friday.setHours(0, 0, 0, 0);
-    const sunday = new Date(friday);
-    sunday.setDate(friday.getDate() + 2);
-    sunday.setHours(23, 59, 59, 999);
+    const { friday, sunday } = getWeekendRange();
     return upcomingEvents.filter((event) => {
       const eventDate = getEventDate(event.date);
       return eventDate >= friday && eventDate <= sunday;
@@ -241,6 +235,14 @@ export default function Home() {
                 <div key={item} className="h-56 animate-pulse rounded-xl bg-slate-100" />
               ))}
             </div>
+          ) : errors.events && events.length === 0 ? (
+            <div className="rounded-xl bg-slate-50 p-6 text-center">
+              <p className="text-sm font-semibold text-slate-800">Events couldn&apos;t be loaded.</p>
+              <p className="mt-1 text-xs text-slate-500">{errors.events}</p>
+              <button onClick={() => fetchEvents()} className="mt-3 rounded-lg bg-blue-700 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-800">
+                Try again
+              </button>
+            </div>
           ) : events.length ? (
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
               {upcomingEvents.slice(0, 5).map((event) => <EventTile key={event.id} event={event} />)}
@@ -257,7 +259,7 @@ export default function Home() {
             <div className="mb-2 flex items-center justify-between">
               <div>
                 <h2 className="text-base font-bold tracking-tight text-slate-900 sm:text-lg">
-                  {weekendEvents.length ? 'This weekend in Bengaluru' : 'Coming up in Bengaluru'}
+                  {weekendEvents.length ? 'This weekend across India' : 'Coming up across India'}
                 </h2>
                 <p className="mt-0.5 text-xs text-slate-500">Find your next great experience</p>
               </div>

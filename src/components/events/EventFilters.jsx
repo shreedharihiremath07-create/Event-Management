@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, SlidersHorizontal } from 'lucide-react';
+import { SlidersHorizontal } from 'lucide-react';
 import { categories, cities } from '../../data/events';
 
 export default function EventFilters({ filters, onChange }) {

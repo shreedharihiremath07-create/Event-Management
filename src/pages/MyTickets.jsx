@@ -7,11 +7,11 @@ import { formatDate, getDaysLeft } from '../utils/helpers';
 import toast from 'react-hot-toast';
 
 export default function MyTickets() {
-  const { myTickets, fetchMyTickets, user, loading } = useStore();
+  const { myTickets, fetchMyTickets, user, loading, errors } = useStore();
 
   useEffect(() => {
-    fetchMyTickets(user?.email);
-  }, [user]);
+    if (user?.email) fetchMyTickets(user.email);
+  }, [fetchMyTickets, user?.email]);
 
   const handleDownloadTicket = (ticketId) => {
     toast.success(`🎟️ Downloading Ticket #${ticketId} PDF with pass badge...`);
@@ -45,7 +45,18 @@ export default function MyTickets() {
         </div>
 
         {/* Loading */}
-        {loading.tickets && (
+        {!user?.email ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
+            <Ticket className="mx-auto mb-4 h-10 w-10 text-blue-700" />
+            <h2 className="text-xl font-bold text-slate-900">Sign in to view your tickets</h2>
+            <p className="mt-2 text-sm text-slate-500">Your registered tickets are linked to your account.</p>
+            <Link to="/login" className="mt-5 inline-flex rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-800">
+              Sign in
+            </Link>
+          </div>
+        ) : null}
+
+        {user?.email && loading.tickets && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[1,2].map(i => (
               <div key={i} className="bg-white rounded-2xl border border-slate-200 h-64 animate-pulse" />
@@ -54,7 +65,18 @@ export default function MyTickets() {
         )}
 
         {/* Tickets Grid or Empty State */}
-        {!loading.tickets && myTickets.length === 0 ? (
+        {user?.email && !loading.tickets && errors.tickets ? (
+          <div role="alert" className="rounded-2xl border border-red-200 bg-white p-8 text-center shadow-sm">
+            <p className="font-semibold text-red-700">Tickets couldn&apos;t be loaded.</p>
+            <p className="mt-1 text-sm text-slate-600">{errors.tickets}</p>
+            <button
+              onClick={() => fetchMyTickets(user?.email)}
+              className="mt-4 rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800"
+            >
+              Try again
+            </button>
+          </div>
+        ) : user?.email && !loading.tickets && myTickets.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm">
             <div className="w-20 h-20 bg-blue-50 text-blue-700 rounded-full flex items-center justify-center mx-auto mb-4">
               <Ticket className="w-10 h-10" />
@@ -72,7 +94,7 @@ export default function MyTickets() {
               Discover & Register Now
             </Link>
           </div>
-        ) : !loading.tickets && (
+        ) : user?.email && !loading.tickets && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {myTickets.map(ticket => {
               const daysLeft = getDaysLeft(ticket.eventDate);

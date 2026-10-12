@@ -7,10 +7,18 @@ import { QRCodeSVG } from 'qrcode.react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 
+const fallbackImage = 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=1200&q=80';
+
+const handleImageError = (event) => {
+  if (event.currentTarget.src !== fallbackImage) event.currentTarget.src = fallbackImage;
+};
+
 export default function EventDetail() {
   const { id } = useParams();
-  const { events, fetchEvents, registerForEvent, isLoggedIn } = useStore();
-  const [event, setEvent] = useState(events.find(e => e.id === id) || null);
+  const { events, fetchEvents, registerForEvent } = useStore();
+  const [eventRequest, setEventRequest] = useState({ id: null, event: null, error: null, loading: true });
+  const [retryCount, setRetryCount] = useState(0);
+  const event = events.find(e => e.id === id) || (eventRequest.id === id ? eventRequest.event : null);
   const [tab, setTab] = useState('about');
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [showRegModal, setShowRegModal] = useState(false);
@@ -19,27 +27,37 @@ export default function EventDetail() {
   const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
 
   useEffect(() => {
-    // If event is not in store, fetch it directly from API
-    if (!event) {
-      api.events.getById(id).then(data => {
-        if (data?.event) setEvent(data.event);
-      }).catch(() => {});
-    }
-    // Also refresh store if empty
-    if (events.length === 0) fetchEvents();
-  }, [id]);
+    let active = true;
+    api.events.getById(id)
+      .then(data => {
+        if (!data?.event) throw new Error('The event service returned an invalid response.');
+        if (active) setEventRequest({ id, event: data.event, error: null, loading: false });
+      })
+      .catch(error => {
+        if (active) setEventRequest({ id, event: null, error: error.message || 'Failed to load event.', loading: false });
+      });
+    return () => { active = false; };
+  }, [id, retryCount]);
 
-  // Sync from store whenever events load
   useEffect(() => {
-    const found = events.find(e => e.id === id);
-    if (found) setEvent(found);
-  }, [events, id]);
+    if (events.length === 0) fetchEvents();
+  }, [events.length, fetchEvents]);
 
   if (!event) return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
-        <p className="text-5xl mb-4">😕</p>
-        <h2 className="text-2xl font-bold text-gray-700 mb-2" style={{fontFamily:'Poppins,sans-serif'}}>Event Not Found</h2>
+        <p className="text-5xl mb-4">{eventRequest.id !== id || eventRequest.loading ? '⏳' : '😕'}</p>
+        <h2 className="text-2xl font-bold text-gray-700 mb-2" style={{fontFamily:'Poppins,sans-serif'}}>
+          {eventRequest.id !== id || eventRequest.loading ? 'Loading event…' : eventRequest.error ? 'Unable to Load Event' : 'Event Not Found'}
+        </h2>
+        {eventRequest.id === id && eventRequest.error && (
+          <>
+            <p role="alert" className="mb-4 text-sm text-red-600">{eventRequest.error}</p>
+            <button onClick={() => setRetryCount(count => count + 1)} className="mr-3 text-blue-700 font-medium hover:underline">
+              Try again
+            </button>
+          </>
+        )}
         <Link to="/events" className="text-blue-700 font-medium hover:underline">Browse events</Link>
       </div>
     </div>
@@ -70,7 +88,7 @@ export default function EventDetail() {
     <div className="min-h-screen bg-gray-50">
       {/* Banner */}
       <div className="relative h-72 md:h-96 overflow-hidden">
-        <img src={event.image} alt={event.title} className="w-full h-full object-cover" />
+        <img src={event.image || fallbackImage} onError={handleImageError} alt={event.title} className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
         <div className="absolute top-4 left-4">
           <Link to="/events" className="flex items-center gap-2 bg-white/20 backdrop-blur text-white px-3 py-1.5 rounded-lg text-sm hover:bg-white/30 transition">

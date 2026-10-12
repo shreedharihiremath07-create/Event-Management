@@ -18,7 +18,8 @@ import Register from './pages/Register';
 
 function AppContent() {
   const { fetchEvents } = useStore();
-  const isDashboard = useLocation().pathname.startsWith('/dashboard');
+  const location = useLocation();
+  const isDashboard = location.pathname.startsWith('/dashboard');
 
   useEffect(() => {
     fetchEvents();
@@ -31,7 +32,7 @@ function AppContent() {
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/events" element={<Events />} />
+          <Route path="/events" element={<Events key={location.search} />} />
           <Route path="/events/:id" element={<EventDetail />} />
           <Route path="/create-event" element={<CreateEvent />} />
           <Route path="/dashboard" element={<Dashboard />} />

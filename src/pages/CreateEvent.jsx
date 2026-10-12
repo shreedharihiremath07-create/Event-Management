@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Trash2, Calendar, MapPin, DollarSign, Users, Sparkles, CheckCircle, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, Sparkles, CheckCircle, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { categories, cities } from '../data/events';
 import toast from 'react-hot-toast';
@@ -117,7 +117,7 @@ export default function CreateEvent() {
         navigate('/events');
       }
     } catch (err) {
-      toast.error('Failed to publish event. Please try again.');
+      toast.error(err.message || 'Failed to publish event. Please try again.');
     } finally {
       setPublishing(false);
     }
