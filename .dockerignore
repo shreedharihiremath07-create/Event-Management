@@ -1,0 +1,11 @@
+.git
+.vscode
+node_modules
+dist
+dist-ssr
+logs
+*.log
+*.sqlite
+*.db
+.env
+.env.*
