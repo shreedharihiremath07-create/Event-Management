@@ -11,6 +11,13 @@ The repository also includes `render.yaml` for deploying as a Node web service.
 If using that configuration, select the Node runtime in Render rather than
 Docker.
 
+If the frontend and API are deployed as separate Render services, set
+`API_PROXY_TARGET` on the frontend's Node web service to the API service's
+origin (for example, `https://event-management-fdq8.onrender.com`). This makes
+same-origin `/api/*` requests reach the API without frontend changes. The
+frontend service must run this Express server; static-only hosting cannot run
+the proxy. Do not set this variable on the API service itself.
+
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
 Currently, two official plugins are available:
